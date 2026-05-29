@@ -15,17 +15,17 @@ function getNotification(req, res) {
     });
   }
 
-  // NOTE: This is the line you'll modify during the live demo.
-  // You'll add a new field here.
+  // Add the `currency` field to the response:
   return res.status(200).json({
     id: notification.id,
     recipient: notification.recipient,
     amount: notification.amount,
     status: notification.status,
+    currency: notification.currency, // <-- New field added here
     timestamp: notification.timestamp,
   });
 }
-
+// Add: currency field to the listNotifications response as well:
 function listNotifications(req, res) {
   logger.info('Listing all notifications');
   const notifications = repository.findAll();
@@ -36,6 +36,7 @@ function listNotifications(req, res) {
       recipient: n.recipient,
       amount: n.amount,
       status: n.status,
+      currency: n.currency, // <-- New field added here
       timestamp: n.timestamp,
     })),
   });
