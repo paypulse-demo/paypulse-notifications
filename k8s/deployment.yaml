@@ -33,7 +33,7 @@ spec:
       containers:
       - name: paypulse-api
         # Image tag will be updated by CI/CD via kubectl set image
-        image: ghcr.io/hy-light/paypulse-api:v0.1.0 # ghcr.io/YOUR-USERNAME/paypulse-api:latest
+        image: ghcr.io/hy-light/paypulse-api:latest # ghcr.io/YOUR-USERNAME/paypulse-api:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -85,7 +85,7 @@ spec:
       terminationGracePeriodSeconds: 30
       # Image pull secret for GHCR (if image is private)
       imagePullSecrets:
-        - name: ghcr-credentials
+      - name: ghcr-credentials
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

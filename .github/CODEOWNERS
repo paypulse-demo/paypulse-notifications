@@ -1,0 +1,7 @@
+# Default owners for everything in the repo
+*       @hy-light
+
+# Infrastructure-related files require extra review
+.github/workflows/      @hy-light @p-chime
+Dockerfile              @hy-light @p-chime
+k8s/                    @hy-light @p-chime

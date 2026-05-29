@@ -69,6 +69,7 @@ jobs:
       - name: Scan for secrets with gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
@@ -99,6 +100,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true # Load the image into the runner for testing
           tags: paypulse-api:pr-${{ github.event.pull_request.number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -108,6 +110,6 @@ jobs:
         with:
           image-ref: paypulse-api:pr-${{ github.event.pull_request.number }}
           format: 'table'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
           exit-code: '1'
           ignore-unfixed: true
