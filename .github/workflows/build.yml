@@ -41,10 +41,8 @@ jobs:
         with:
           context: .
           push: true
-          load: true # Load the image into the runner for testing
-          tags: |
-            ${{ steps.meta.outputs.tags }}
-            paypulse-api:latest
+          # load: true # Load the image into the runner for testing
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -54,11 +52,11 @@ jobs:
       - name: Run Trivy on pushed image
         uses: aquasecurity/trivy-action@v0.24.0
         with:
-          image-ref: paypulse-api:latest # ${{ steps.meta.outputs.tags }} # ghcr.io/${{ github.repository_owner }}/paypulse-api:latest
+          image-ref: ghcr.io/${{ github.repository_owner }}/paypulse-api:latest # paypulse-api:latest ${{ steps.meta.outputs.tags }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL'
-          # github-pat: ${{ secrets.GITHUB_TOKEN }}
+          github-pat: ${{ secrets.TRIVY_PAT }}
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
