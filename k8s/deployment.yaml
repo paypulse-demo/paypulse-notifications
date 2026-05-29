@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paypulse-api
+  namespace: paypulse-prod
+  labels:
+    app: paypulse-api
+    component: api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: paypulse-api
+  template:
+    metadata:
+      labels:
+        app: paypulse-api
+        component: api
+      annotations:
+        # Datadog autodiscovery
+        ad.datadoghq.com/paypulse-api.logs: '[{"source": "nodejs", "service": "paypulse-api"}]'
+    spec:
+      # Run as non-root for security
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: paypulse-api
+        # Image tag will be updated by CI/CD via kubectl set image
+        image: ghcr.io/hy-light/paypulse-api:v0.1.0 # ghcr.io/YOUR-USERNAME/paypulse-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: LOG_LEVEL
+          value: "info"
+        # Datadog integration
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_ENV
+          value: "demo"
+        - name: DD_SERVICE
+          value: "paypulse-api"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 2
+        # Allow time for graceful shutdown (matches our SIGTERM handler)
+        lifecycle:
+          preStop:
+            exec:
+              command: [ "sleep", "5" ]
+      terminationGracePeriodSeconds: 30
+      # Image pull secret for GHCR (if image is private)
+      imagePullSecrets:
+        - name: ghcr-credentials
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: paypulse-api
+  namespace: paypulse-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: paypulse-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30

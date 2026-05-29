@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: paypulse-api
+  namespace: paypulse-prod
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false" # Demo only; enable TLS in real prod
+spec:
+  ingressClassName: nginx
+  rules:
+  # If you have a domain, use it. Otherwise, this works without a host (matches all traffic to the IP)
+  - host: api.beleaderinnohub.com # api.paypulse.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: paypulse-api
+            port:
+              name: http
+  # Wildcard rule for testing without DNS
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: paypulse-api
+            port:
+              name: http

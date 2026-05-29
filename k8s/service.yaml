@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: paypulse-api
+  namespace: paypulse-prod
+  labels:
+    app: paypulse-api
+spec:
+  type: ClusterIP
+  selector:
+    app: paypulse-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
