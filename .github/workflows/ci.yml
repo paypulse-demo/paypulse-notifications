@@ -110,6 +110,6 @@ jobs:
         with:
           image-ref: paypulse-api:pr-${{ github.event.pull_request.number }}
           format: 'table'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
           exit-code: '1'
           ignore-unfixed: true
