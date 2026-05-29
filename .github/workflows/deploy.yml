@@ -1,0 +1,104 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Build and Push"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    # Only deploy if the build workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment:
+      name: production
+      url: https://api.beleaderinnohub.com/ # https://api.paypulse.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.35.0' # 1.30 was here before
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connection
+        run: kubectl cluster-info
+
+      - name: Get short SHA for image tag
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/paypulse-api \
+            paypulse-api=ghcr.io/${{ github.repository_owner }}/paypulse-api:${{ steps.sha.outputs.short }} \
+            -n paypulse-prod
+
+      - name: Wait for rollout to complete
+        run: |
+          kubectl rollout status deployment/paypulse-api \
+            -n paypulse-prod \
+            --timeout=5m
+
+      - name: Verify deployment health
+        run: |
+          # Give the new pods a moment to start serving traffic
+          sleep 10
+
+          # Hit the health endpoint via the service
+          kubectl run smoke-test-${{ steps.sha.outputs.short }} \
+            --rm -i --restart=Never \
+            --image=curlimages/curl:latest \
+            -n paypulse-prod \
+            -- curl -fsS http://paypulse-api/health/ready
+
+      # Optional: Add notifications for success/failure
+      - name: Send email on success
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "✅ PayPulse deployed to production"
+          to: puc.chime@gmail.com
+          from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            PayPulse deployment succeeded for commit `${{ steps.sha.outputs.short }}`.
+            Check the workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Send email on failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "❌ PayPulse deployment FAILED"
+          to: puc.chime@gmail.com
+          from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            PayPulse deployment failed for commit `${{ steps.sha.outputs.short }}`.
+            Check the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    #       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    #   - name: Notify Slack on failure
+    #     if: failure()
+    #     uses: slackapi/slack-github-action@v1.27.0
+    #     with:
+    #       payload: |
+    #         {
+    #           "text": "❌ PayPulse deployment FAILED: `${{ steps.sha.outputs.short }}`. Check the logs."
+    #         }
+    #     env:
+    #       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
