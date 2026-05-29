@@ -52,12 +52,14 @@ jobs:
 
       - name: Run Trivy on pushed image
         uses: aquasecurity/trivy-action@v0.24.0
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.TRIVY_PAT }}
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/paypulse-api:latest # paypulse-api:latest ${{ steps.meta.outputs.tags }}
+          image-ref: ghcr.io/${{ github.repository_owner }}/paypulse-api:latest
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL'
-          github-pat: ${{ secrets.TRIVY_PAT }}
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
