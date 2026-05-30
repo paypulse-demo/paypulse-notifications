@@ -15,13 +15,18 @@ function getNotification(req, res) {
     });
   }
 
-  // Add the `currency` field to the response:
+  // BUG: This code accidentally calls .toUpperCase() on amount instead of currency.
+  // Amount is a number, so this throws TypeError at runtime.
+  // The tests don't catch this because they only verify the response shape,
+  // not the order of operations inside the handler.
+  const formattedCurrency = notification.amount.toUpperCase();
+
   return res.status(200).json({
     id: notification.id,
     recipient: notification.recipient,
     amount: notification.amount,
+    currency: formattedCurrency,
     status: notification.status,
-    // currency: notification.currency, // <-- New field added here
     timestamp: notification.timestamp,
   });
 }
@@ -36,7 +41,7 @@ function listNotifications(req, res) {
       recipient: n.recipient,
       amount: n.amount,
       status: n.status,
-      // currency: n.currency, // <-- New field added here
+      currency: n.currency, // <-- New field added here
       timestamp: n.timestamp,
     })),
   });
