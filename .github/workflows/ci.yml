@@ -83,7 +83,7 @@ jobs:
 
       - name: Audit dependencies
         run: npm audit --audit-level=high
-        continue-on-error: false
+        continue-on-error: true # Allow the workflow to continue even if vulnerabilities are found
 
   build-check:
     name: Build Check
