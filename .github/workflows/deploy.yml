@@ -32,6 +32,10 @@ jobs:
       - name: Verify cluster connection
         run: kubectl cluster-info
 
+      - name: Apply all Kubernetes resources
+        run: |
+          kubectl apply -f k8s/ -n paypulse-prod
+
       - name: Get short SHA for image tag
         id: sha
         run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
