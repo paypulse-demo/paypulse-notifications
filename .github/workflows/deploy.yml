@@ -32,6 +32,19 @@ jobs:
       - name: Verify cluster connection
         run: kubectl cluster-info
 
+      - name: Ensure namespace exists
+        run: |
+          kubectl create namespace paypulse-prod --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create image pull secret
+        run: |
+          kubectl create secret docker-registry ghcr-credentials \
+            --docker-server=ghcr.io \
+            --docker-username=${{ secrets.GHCR_USER }} \
+            --docker-password=${{ secrets.GHCR_TOKEN }} \
+            -n paypulse-prod \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Apply all Kubernetes resources
         run: |
           kubectl apply -f k8s/ -n paypulse-prod
