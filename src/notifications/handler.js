@@ -21,7 +21,7 @@ function getNotification(req, res) {
     recipient: notification.recipient,
     amount: notification.amount,
     status: notification.status,
-    currency: notification.currency, // <-- New field added here
+    // currency: notification.currency, // <-- New field added here
     timestamp: notification.timestamp,
   });
 }
@@ -36,7 +36,7 @@ function listNotifications(req, res) {
       recipient: n.recipient,
       amount: n.amount,
       status: n.status,
-      currency: n.currency, // <-- New field added here
+      // currency: n.currency, // <-- New field added here
       timestamp: n.timestamp,
     })),
   });
@@ -46,5 +46,3 @@ module.exports = {
   getNotification,
   listNotifications,
 };
-
-// Adding this comment for test purposes. Please ignore this comment.
